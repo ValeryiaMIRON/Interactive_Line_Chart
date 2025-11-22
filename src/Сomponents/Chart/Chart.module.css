@@ -1,0 +1,138 @@
+.container {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.lightTheme {
+  background-color: #fff;
+  color: #000;
+}
+
+.darkTheme {
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+.selectContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  gap: 10px;
+}
+
+.groupContainer {
+  display: flex;
+  gap: 10px;
+}
+
+.selectStyle {
+  padding: 2px;
+}
+
+.button {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+
+.lightButton {
+  background: #fff;
+  color: #000;
+}
+
+.darkButton {
+  background: #333;
+  color: #fff;
+}
+
+.tooltipContainer {
+  border: 1px solid #ccc;
+  padding: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.line {
+  border-top: 1px solid #ccc ;
+  margin-bottom: 6px;
+}
+
+.formattedDateContainer {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.formattedDate {
+  margin-left: 4px;
+}
+
+.tooltipRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  min-width: 120px;
+}
+
+.tooltipRowItems {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.colorDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.darkTheme .tooltipContainer {
+  background: #333;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.lightTheme .tooltipContainer {
+  background: #fff;
+  border: 1px solid #ccc;
+  color: #000;
+}
+
+.lightTheme .selectStyle {
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+}
+
+.darkTheme .selectStyle {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.darkTheme .selectStyle:hover {
+  background: #444;
+}
+
+.zoomContainer {
+    display: flex;
+    gap: 5px;
+}
+
+.lightTheme .zoom {
+  background: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+}
+
+.darkTheme .zoom {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+}
+
