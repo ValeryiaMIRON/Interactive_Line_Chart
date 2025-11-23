@@ -26,12 +26,46 @@ export const Chart: React.FC = () => {
     const [lineStyle, setLineStyle] = useState<"Line" | "Smooth" | "Area">("Line");
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const chartRef = useRef<HTMLDivElement>(null);
-    const [zoomFactor, setZoomFactor] = useState(1);
+    // Drag–zoom state
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStartX, setDragStartX] = useState<number | null>(null);
+    const [dragEndX, setDragEndX] = useState<number | null>(null);
 
+    // === Step 2: Drag Handlers ===
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStartX(e.clientX);
+        setDragEndX(null);
+    };
 
-    const handleZoomIn = () => setZoomFactor((prev) => Math.min(prev * 1.5, 10));
-    const handleZoomOut = () => setZoomFactor((prev) => Math.max(prev / 1.5, 1));
-    const handleResetZoom = () => setZoomFactor(1);
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || dragStartX === null) return;
+        setDragEndX(e.clientX);
+    };
+
+    const handleMouseUp = () => {
+        if (isDragging && dragStartX !== null && dragEndX !== null) {
+            const rect = chartRef.current?.getBoundingClientRect();
+            if (!rect) return;
+
+            const startRatio = Math.min(dragStartX, dragEndX) - rect.left;
+            const endRatio = Math.max(dragStartX, dragEndX) - rect.left;
+            const chartWidth = rect.width;
+
+            const startIndex = Math.floor((startRatio / chartWidth) * processedData.length);
+            const endIndex = Math.floor((endRatio / chartWidth) * processedData.length);
+
+            setZoomRange([
+                Math.max(0, startIndex),
+                Math.min(processedData.length - 1, endIndex),
+            ]);
+        }
+
+        setIsDragging(false);
+        setDragStartX(null);
+        setDragEndX(null);
+    };
+
 
 
     const exportToPNG = async () => {
@@ -93,13 +127,26 @@ export const Chart: React.FC = () => {
         return data;
     }, [period]);
 
-    const zoomedData = useMemo(() => {
-        const count = Math.floor(processedData.length / zoomFactor);
-        return processedData.slice(0, count > 0 ? count : 1);
-    }, [processedData, zoomFactor]);
+    const [zoomRange, setZoomRange] = useState([0, processedData.length - 1]);
+    const visibleData = processedData.slice(zoomRange[0], zoomRange[1] + 1);
 
+    const zoomIn = () => {
+        const [start, end] = zoomRange;
+        if (end - start <= 3) return;
+        setZoomRange([start + 1, end - 1]);
+    };
 
+    const zoomOut = () => {
+        const [start, end] = zoomRange;
+        setZoomRange([
+            Math.max(0, start - 1),
+            Math.min(processedData.length - 1, end + 1),
+        ]);
+    };
 
+    const resetZoom = () => {
+        setZoomRange([0, processedData.length - 1]);
+    };
 
     const linesToShow = useMemo(() => {
         if (selectedVariation === "All") return variations;
@@ -142,7 +189,7 @@ export const Chart: React.FC = () => {
                                 <div> {name}</div>
                                 {i === 0 && <WinnerIcon style={{ marginLeft: 5, marginTop: 4 }} />}
                             </div>
-                            <div style={{ marginLeft: 10, alignItems: 'center', display: 'flex' }}>{Number(p.value).toFixed(2)}%</div>
+                            <div className={styles.percentageValue}>{Number(p.value).toFixed(2)}%</div>
                         </div>
                     );
                 })}
@@ -152,6 +199,9 @@ export const Chart: React.FC = () => {
 
     return (
         <div className={`${styles.container} ${theme === "light" ? styles.lightTheme : styles.darkTheme}`}>
+            <div className={styles.dragHint}>
+                Drag on the chart to zoom
+            </div>
             <div className={styles.selectContainer}>
                 <div className={styles.groupContainer}>
                     <select className={styles.selectStyle} value={selectedVariation} onChange={(e) => setSelectedVariation(e.target.value)}>
@@ -180,12 +230,6 @@ export const Chart: React.FC = () => {
                     >
                         {theme === "light" ? "Light Theme" : "Dark Theme"}
                     </button>
-                    <div className={styles.zoomContainer}>
-                        <button className={styles.zoom} onClick={handleZoomIn}>+</button>
-                        <button className={styles.zoom} onClick={handleZoomOut}>−</button>
-                        <button className={styles.zoom} onClick={handleResetZoom}>⟳</button>
-                    </div>
-
                     <button
                         className={`${styles.button} ${theme === "light" ? styles.lightButton : styles.darkButton}`}
                         onClick={exportToPNG}
@@ -193,14 +237,32 @@ export const Chart: React.FC = () => {
                     >
                         Export chart to PNG
                     </button>
+                    <div className={styles.zoomContainer}>
+                        <button className={styles.zoom} onClick={zoomIn}>+</button>
+                        <button className={styles.zoom} onClick={zoomOut}>−</button>
+                        <button className={styles.zoom} onClick={resetZoom}>⟳</button>
+                    </div>
                 </div>
             </div>
-            <div ref={chartRef}>
+            <div ref={chartRef} style={{ position: "relative" }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}>
                 <ResponsiveContainer width="100%" height={400}>
                     {lineStyle === "Area" ? (
-                        <AreaChart data={zoomedData}>
-                            <XAxis dataKey="date" />
-                            <YAxis unit="%" domain={[0, 50]} />
+                        <AreaChart data={visibleData}>
+                            <XAxis
+                                dataKey="date"
+                                tickFormatter={(value) => {
+                                    const d = new Date(value);
+                                    const day = String(d.getDate()).padStart(2, "0");
+                                    const month = String(d.getMonth() + 1).padStart(2, "0");
+                                    const year = d.getFullYear();
+                                    return `${day}/${month}/${year}`;
+                                }}
+                            />
+
+                            <YAxis unit="%" domain={[0, 40]} />
                             <Tooltip content={renderTooltip} />
                             {linesToShow.map((v) => (
                                 <Area
@@ -213,8 +275,18 @@ export const Chart: React.FC = () => {
                             ))}
                         </AreaChart>
                     ) : (
-                        <LineChart data={zoomedData}>
-                            <XAxis dataKey="date" />
+                        <LineChart data={visibleData}>
+                            <XAxis
+                                dataKey="date"
+                                tickFormatter={(value) => {
+                                    const d = new Date(value);
+                                    const day = String(d.getDate()).padStart(2, "0");
+                                    const month = String(d.getMonth() + 1).padStart(2, "0");
+                                    const year = d.getFullYear();
+                                    return `${day}/${month}/${year}`;
+                                }}
+                            />
+
                             <YAxis unit="%" domain={[0, 40]} />
                             <Tooltip content={renderTooltip} />
                             {linesToShow.map((v) => (
@@ -230,6 +302,19 @@ export const Chart: React.FC = () => {
                         </LineChart>
                     )}
                 </ResponsiveContainer>
+                {isDragging && dragStartX !== null && dragEndX !== null && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: Math.min(dragStartX, dragEndX) - chartRef.current!.getBoundingClientRect().left,
+                            width: Math.abs(dragEndX - dragStartX),
+                            height: "100%",
+                            backgroundColor: "rgba(0, 123, 255, 0.2)",
+                            pointerEvents: "none",
+                        }}
+                    />
+                )}
             </div>
         </div>
     );
