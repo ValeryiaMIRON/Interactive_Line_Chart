@@ -16,6 +16,7 @@ import { CalendarIcon } from "../Icons/CalendarIcon";
 import { WinnerIcon } from "../Icons/WinnerIcon";
 import { DataItem, Variation } from "./interface";
 import { toPng } from "html-to-image";
+import { useChartZoom } from "../hooks/useChartZoom";
 
 const variations: Variation[] = jsonData.variations;
 const rawData: DataItem[] = jsonData.data;
@@ -26,47 +27,6 @@ export const Chart: React.FC = () => {
     const [lineStyle, setLineStyle] = useState<"Line" | "Smooth" | "Area">("Line");
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const chartRef = useRef<HTMLDivElement>(null);
-    // Drag–zoom state
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStartX, setDragStartX] = useState<number | null>(null);
-    const [dragEndX, setDragEndX] = useState<number | null>(null);
-
-    // === Step 2: Drag Handlers ===
-    const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
-        setDragStartX(e.clientX);
-        setDragEndX(null);
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || dragStartX === null) return;
-        setDragEndX(e.clientX);
-    };
-
-    const handleMouseUp = () => {
-        if (isDragging && dragStartX !== null && dragEndX !== null) {
-            const rect = chartRef.current?.getBoundingClientRect();
-            if (!rect) return;
-
-            const startRatio = Math.min(dragStartX, dragEndX) - rect.left;
-            const endRatio = Math.max(dragStartX, dragEndX) - rect.left;
-            const chartWidth = rect.width;
-
-            const startIndex = Math.floor((startRatio / chartWidth) * processedData.length);
-            const endIndex = Math.floor((endRatio / chartWidth) * processedData.length);
-
-            setZoomRange([
-                Math.max(0, startIndex),
-                Math.min(processedData.length - 1, endIndex),
-            ]);
-        }
-
-        setIsDragging(false);
-        setDragStartX(null);
-        setDragEndX(null);
-    };
-
-
 
     const exportToPNG = async () => {
         if (!chartRef.current) return;
@@ -127,26 +87,20 @@ export const Chart: React.FC = () => {
         return data;
     }, [period]);
 
-    const [zoomRange, setZoomRange] = useState([0, processedData.length - 1]);
+    const {
+        zoomRange,
+        zoomIn,
+        zoomOut,
+        resetZoom,
+        isDragging,
+        dragStartX,
+        dragEndX,
+        handleMouseDown,
+        handleMouseMove,
+        handleMouseUp
+    } = useChartZoom(processedData.length);
+
     const visibleData = processedData.slice(zoomRange[0], zoomRange[1] + 1);
-
-    const zoomIn = () => {
-        const [start, end] = zoomRange;
-        if (end - start <= 3) return;
-        setZoomRange([start + 1, end - 1]);
-    };
-
-    const zoomOut = () => {
-        const [start, end] = zoomRange;
-        setZoomRange([
-            Math.max(0, start - 1),
-            Math.min(processedData.length - 1, end + 1),
-        ]);
-    };
-
-    const resetZoom = () => {
-        setZoomRange([0, processedData.length - 1]);
-    };
 
     const linesToShow = useMemo(() => {
         if (selectedVariation === "All") return variations;
@@ -247,7 +201,11 @@ export const Chart: React.FC = () => {
             <div ref={chartRef} style={{ position: "relative" }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}>
+                onMouseUp={() => {
+                    const rect = chartRef.current!.getBoundingClientRect();
+                    handleMouseUp(processedData.length, rect.left, rect.width);
+                }}
+            >
                 <ResponsiveContainer width="100%" height={400}>
                     {lineStyle === "Area" ? (
                         <AreaChart data={visibleData}>
