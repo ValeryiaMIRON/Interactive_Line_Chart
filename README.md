@@ -6,7 +6,7 @@ The chart visualizes daily conversion rates for multiple variations and includes
 
 🚀 Live Demo
 👉 https://valeryiamiron.github.io/Interactive_Line_Chart/
-or
+
 GitHub Repository
 👉 https://github.com/ValeryiaMIRON/Interactive_Line_Chart
 
