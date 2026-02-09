@@ -1,5 +1,5 @@
 # Interactive_Line_Chart
-Test Assignment: Interactive Line Chart
+Interactive Line Chart
 
 Interactive A/B test visualization built with React + TypeScript and Recharts.
 The chart visualizes daily conversion rates for multiple variations and includes interactive controls such as zoom, line styles, theme switcher, and data export.
